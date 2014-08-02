@@ -30,13 +30,22 @@ function wquery($a){
 function getcm($c){
 	$r = array();
 	$c = 'Category:'.$c;
-	$a = json_decode(wquery(array('list'=>'categorymembers','cmtitle'=>$c)));
-	$m = $a->query->categorymembers;
-	foreach ($m as $v){
-		if ((intval($v->ns)==0) and (true)){ // add your own condition if you like
-			array_push($r,$v->title);	
+	$cmcontinue = false;
+	do {
+		$a = json_decode(wquery(array('list'=>'categorymembers','cmtitle'=>$c,'cmcontinue'=>$cmcontinue))); 
+		$m = $a->query->categorymembers;
+		foreach ($m as $v){
+			if ((intval($v->ns)==0) and ($v->title != 'Halaman Utama')){
+				array_push($r,$v->title);	
+			}
 		}
-	}
+		if (property_exists($a,'query-continue')){
+			$theEscapeForHyphen = 'query-continue'; 
+			$cmcontinue = $a->$theEscapeForHyphen->categorymembers->cmcontinue;
+		} else {
+			$cmcontinue = false;
+		}
+	} while ($cmcontinue != false);
 	return $r;
 }
 
@@ -69,18 +78,23 @@ function getcon($t){
 }
 
 // join contents of a category
-function jcon($c){
-	$ar = array();
-	$cm = getcm($c);
-	foreach($cm as $m){
-		$con = getcon($m);
-		array_push($ar,$con);
+function jcon($c,$s = null){
+	$ar = array(); 
+	$cm = getcm($c); 
+	$ks = array_search($s, $cm); 
+	if (!$ks){
+		$ks = 0;
+	} 
+	for ($i = $ks; $i < count($cm); ++$i){
+		$con = getcon($cm[$i]); 
+		array_push($ar,$con);		
 	}
 	$jc = implode(" ", $ar);
 	return $jc;
 }
 
 $c = $_POST['category'];
-echo jcon($c);
+$s = $_POST['start'];
+echo jcon($c,$s);
 
 ?>
